@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+eggs/
+*.egg-info/
+
+# Notebooks
+.ipynb_checkpoints
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Virtual Environment
+venv/
+ENV/
+
+# Data files
+data/raw/*
+data/processed/*
+data/results/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/results/.gitkeep
+
+# Logs
+*.log
+
+# Config files with sensitive info
+config/live.yaml
