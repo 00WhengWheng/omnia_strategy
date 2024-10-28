@@ -19,8 +19,8 @@ class SentimentSource:
 
 class SentimentAnalyzer(BaseAnalyzer):
     def _initialize_analyzer(self) -> None:
-        """Inizializza l'analizzatore del sentiment"""
-        # Configurazione fonti sentiment
+        # Initialize the sentiment analyzer
+        # Define the sentiment sources
         self.sources = {
             'market': SentimentSource(
                 name='market_data',
@@ -52,26 +52,25 @@ class SentimentAnalyzer(BaseAnalyzer):
             )
         }
         
-        # Metriche di mercato
+        # Market metrics
         self.market_metrics = {
             'vix_threshold': self.config.get('sentiment.vix_threshold', 20),
             'put_call_threshold': self.config.get('sentiment.put_call_threshold', 1.0),
             'fear_greed_neutral': self.config.get('sentiment.fear_greed_neutral', 50)
         }
         
-        # Cache per i dati
+        # Sentiment history
         self.cache = {}
         self.cache_duration = timedelta(hours=1)
 
     def analyze(self, data: pd.DataFrame) -> AnalysisResult:
-        """Esegue l'analisi completa del sentiment"""
-        # Analisi delle diverse componenti
+        # Analyze the overall market sentiment
         market_sentiment = self._analyze_market_sentiment(data)
         social_sentiment = self._analyze_social_sentiment()
         news_sentiment = self._analyze_news_sentiment()
         positioning_sentiment = self._analyze_positioning()
         
-        # Combina i risultati
+        # Mix the sentiment sources
         composite_sentiment = self._calculate_composite_sentiment({
             'market': market_sentiment,
             'social': social_sentiment,
@@ -79,7 +78,7 @@ class SentimentAnalyzer(BaseAnalyzer):
             'positioning': positioning_sentiment
         })
         
-        # Calcola la confidenza
+        # Calculate the confidence in the sentiment analysis
         confidence = self._calculate_sentiment_confidence({
             'market': market_sentiment,
             'social': social_sentiment,
@@ -110,7 +109,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         return result
 
     def _analyze_market_sentiment(self, data: pd.DataFrame) -> Dict:
-        """Analizza il sentiment basato su dati di mercato"""
+        # Analyze the sentiment from market data
         # VIX analysis
         vix_sentiment = self._analyze_vix()
         
@@ -141,7 +140,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         }
 
     def _analyze_social_sentiment(self) -> Dict:
-        """Analizza il sentiment dai social media"""
+        # Analyze the sentiment from social media
         # Twitter sentiment
         twitter = self._analyze_twitter_sentiment()
         
@@ -164,7 +163,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         }
 
     def _analyze_news_sentiment(self) -> Dict:
-        """Analizza il sentiment dalle news finanziarie"""
+        # Analyze the sentiment from news sources
         # Financial News Analysis
         news_sentiment = self._analyze_financial_news()
         
@@ -187,7 +186,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         }
 
     def _analyze_positioning(self) -> Dict:
-        """Analizza il positioning di mercato"""
+        # Analyze the sentiment from market positioning
         # COT Data
         cot = self._analyze_cot_data()
         
@@ -200,7 +199,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         # Short Interest
         short_interest = self._analyze_short_interest()
         
-        # Calcola segnale composito
+        # Generate composite signal
         signal = self._calculate_positioning_signal(
             cot, flows, margin, short_interest)
             
@@ -214,7 +213,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         }
 
     def _calculate_composite_sentiment(self, sentiments: Dict) -> Dict:
-        """Calcola il sentiment composito pesato"""
+        # Generate a composite sentiment signal
         composite_signal = 0
         total_weight = 0
         
@@ -234,7 +233,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         }
 
     def _calculate_sentiment_confidence(self, sentiments: Dict) -> float:
-        """Calcola la confidenza complessiva del sentiment"""
+        # Calculate the confidence in the composite sentiment
         confidences = []
         weights = []
         
@@ -258,7 +257,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         return np.average(confidences, weights=weights)
 
     def _detect_sentiment_extremes(self, sentiments: Dict) -> Dict:
-        """Identifica estremi nel sentiment"""
+        # Identify extreme sentiment values
         extremes = {}
         for source, sentiment in sentiments.items():
             if abs(sentiment['signal']) > 0.8:
@@ -269,7 +268,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         return extremes
 
     def _detect_sentiment_divergences(self, sentiments: Dict) -> List:
-        """Identifica divergenze tra fonti di sentiment"""
+        # Identify sentiment divergences
         divergences = []
         sources = list(sentiments.keys())
         
@@ -290,7 +289,7 @@ class SentimentAnalyzer(BaseAnalyzer):
         return divergences
 
     def _analyze_sentiment_trends(self, sentiments: Dict) -> Dict:
-        """Analizza i trend del sentiment"""
+        # Analyze sentiment trends
         trends = {}
         
         for source, sentiment in sentiments.items():
@@ -307,11 +306,11 @@ class SentimentAnalyzer(BaseAnalyzer):
         return trends
 
     def get_required_columns(self) -> list:
-        """Ritorna le colonne richieste per l'analisi"""
+        # Get the required columns for the analysis
         return ['close', 'volume', 'high', 'low']
 
     def get_sentiment_summary(self) -> Dict:
-        """Fornisce un sommario del sentiment corrente"""
+        # Get the latest sentiment summary
         if self.results_history.empty:
             return {}
             

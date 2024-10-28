@@ -8,7 +8,7 @@ from .base import BaseAnalyzer, AnalysisResult
 
 class CorrelationAnalyzer(BaseAnalyzer):
     def _initialize_analyzer(self) -> None:
-        """Inizializza l'analizzatore delle correlazioni"""
+        # Initialize the correlation analyzer
         self.lookback_window = self.config.get('correlation.lookback_window', 252)
         self.min_periods = self.config.get('correlation.min_periods', 30)
         self.correlation_threshold = self.config.get('correlation.threshold', 0.7)
@@ -19,23 +19,23 @@ class CorrelationAnalyzer(BaseAnalyzer):
         self.correlation_history = {}
 
     def analyze(self, data: pd.DataFrame) -> AnalysisResult:
-        """Analizza le correlazioni tra i diversi asset/indicatori"""
+        # Analyze the correlation between different assets/indicators
         if not self.validate_data(data):
             raise ValueError("Invalid data for correlation analysis")
 
-        # Calcola le diverse metriche di correlazione
+        # Get the correlation matrices
         basic_corr = self._calculate_basic_correlations(data)
         rolling_corr = self._calculate_rolling_correlations(data)
         regime_corr = self._analyze_regime_correlations(data)
         lead_lag = self._analyze_lead_lag_relationships(data)
 
-        # Calcola la stabilità delle correlazioni
+        # Get the correlation stability
         stability = self._calculate_correlation_stability(rolling_corr)
 
-        # Identifica cluster di correlazione
+        # Identify correlation clusters
         clusters = self._identify_correlation_clusters(basic_corr['pearson'])
 
-        # Calcola la confidenza complessiva
+        # Get the confidence in the correlation analysis
         confidence = self._calculate_correlation_confidence(
             basic_corr, stability, len(data))
 
@@ -62,7 +62,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
         return result
 
     def _calculate_basic_correlations(self, data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
-        """Calcola correlazioni base usando diversi metodi"""
+        # Get basic correlations
         results = {}
         
         # Pearson correlation
@@ -74,7 +74,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
         return results
 
     def _calculate_rolling_correlations(self, data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
-        """Calcola correlazioni rolling per analisi della stabilità"""
+        # Get rolling correlations
         rolling_corr = {}
         
         for method in self.correlation_types:
@@ -84,7 +84,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
         return rolling_corr
 
     def _analyze_regime_correlations(self, data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
-        """Analizza correlazioni condizionate al regime di mercato"""
+        # Analyze correlations based on different regimes
         if 'regime' not in data.columns:
             return {}
             
@@ -101,7 +101,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
         return regime_correlations
 
     def _analyze_lead_lag_relationships(self, data: pd.DataFrame) -> Dict[str, Dict]:
-        """Analizza relazioni lead/lag tra le serie"""
+        # Analyze lead/lag relationships between different assets/indicators
         lead_lag = {}
         
         for col1 in data.columns:
@@ -117,7 +117,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
 
     def _calculate_lag_correlation(self, series1: pd.Series, 
                                  series2: pd.Series) -> Dict[str, float]:
-        """Calcola correlazione con lag per identificare lead/lag"""
+        # lead/lag relationship
         correlations = {}
         
         for lag in range(-self.max_lag, self.max_lag + 1):
@@ -142,21 +142,21 @@ class CorrelationAnalyzer(BaseAnalyzer):
         }
 
     def _calculate_correlation_stability(self, rolling_correlations: Dict) -> float:
-        """Calcola la stabilità delle correlazioni nel tempo"""
+        # Stability relative to the rolling correlations
         stabilities = []
         
         for method, corr_matrix in rolling_correlations.items():
-            # Calcola la volatilità delle correlazioni
+            # Volatility of correlation matrix
             correlation_volatility = corr_matrix.std()
-            # Normalizza e converti in misura di stabilità
+            # Normalize in stability of correlation
             stability = 1 - correlation_volatility.mean()
             stabilities.append(stability)
             
         return np.mean(stabilities)
 
     def _identify_correlation_clusters(self, correlation_matrix: pd.DataFrame) -> List:
-        """Identifica cluster di asset/indicatori altamente correlati"""
-        # Converti matrice correlazione in matrice distanza
+        # Identify correlation clusters
+        # Convert to distance matrix
         distance_matrix = 1 - np.abs(correlation_matrix)
         
         clusters = []
@@ -166,7 +166,7 @@ class CorrelationAnalyzer(BaseAnalyzer):
             if col in visited:
                 continue
                 
-            # Trova tutti gli elementi altamente correlati
+            # Find all highly correlated assets
             cluster = set([col])
             for other_col in correlation_matrix.columns:
                 if other_col != col and abs(correlation_matrix.loc[col, other_col]) > self.correlation_threshold:
@@ -180,25 +180,25 @@ class CorrelationAnalyzer(BaseAnalyzer):
 
     def _calculate_correlation_confidence(self, basic_correlations: Dict,
                                        stability: float, n_samples: int) -> float:
-        """Calcola la confidenza nelle correlazioni identificate"""
-        # Maggiore confidenza per:
-        # 1. Correlazioni stabili nel tempo
-        # 2. Concordanza tra diversi metodi di correlazione
-        # 3. Numero sufficiente di campioni
+        # Confidence in the correlation analysis
+        # More confidence if:
+        # 1. Correlation stability is high
+        # 2. Different methods of correlation agree
+        # 3. Enough samples are available
         
-        # Stabilità temporale (0-1)
+        # Correlation stability
         stability_score = stability
         
-        # Concordanza tra metodi
+        # Method agreement
         method_agreement = 1 - abs(
             basic_correlations['pearson'].mean().mean() - 
             basic_correlations['spearman'].mean().mean()
         )
         
-        # Adeguatezza campione
+        # Sample score
         sample_score = min(1.0, n_samples / self.lookback_window)
         
-        # Combina i fattori
+        # Mix all scores
         confidence = (
             0.4 * stability_score +
             0.4 * method_agreement +
@@ -209,24 +209,24 @@ class CorrelationAnalyzer(BaseAnalyzer):
 
     def _calculate_composite_score(self, basic_correlations: Dict,
                                 stability: float) -> float:
-        """Calcola uno score composito di correlazione"""
-        # Media delle correlazioni assolute
+        # Get a composite score for the correlation analysis
+        # Absolute mean correlation
         mean_correlation = np.mean([
             np.abs(basic_correlations['pearson']).mean().mean(),
             np.abs(basic_correlations['spearman']).mean().mean()
         ])
         
-        # Aggiusta per stabilità
+        # Final composite score
         composite = mean_correlation * (0.5 + 0.5 * stability)
         
         return np.clip(composite, -1, 1)
 
     def get_required_columns(self) -> list:
-        """Specifica le colonne richieste per l'analisi"""
-        return ['close', 'volume', 'high', 'low']  # Minimo richiesto
+        # Specify the required columns for correlation analysis
+        return ['close', 'volume', 'high', 'low']  # Minimum required columns
 
     def get_correlation_summary(self) -> Dict:
-        """Fornisce un sommario delle correlazioni più significative"""
+        # Get the latest correlation summary
         if self.results_history.empty:
             return {}
             

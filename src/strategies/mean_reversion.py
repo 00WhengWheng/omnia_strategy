@@ -9,12 +9,11 @@ from ..core.constants import TimeFrame
 
 class MeanReversionStrategy(BaseStrategy):
     def _initialize_strategy(self) -> None:
-        """Inizializza i parametri specifici della strategia"""
-        # Parametri Bollinger Bands
+        # Timeframe
         self.bb_period = self.config.get('bb_period', 20)
         self.bb_std = self.config.get('bb_std', 2.0)
         
-        # Parametri RSI
+        # Parameters for RSI
         self.rsi_period = self.config.get('rsi_period', 14)
         self.rsi_overbought = self.config.get('rsi_overbought', 70)
         self.rsi_oversold = self.config.get('rsi_oversold', 30)
@@ -40,56 +39,55 @@ class MeanReversionStrategy(BaseStrategy):
         self.stop_loss_stdev = self.config.get('stop_loss_stdev', 3.0)
         self.max_holding_period = self.config.get('max_holding_period', 10)
         
-        # Tracciamento statistiche
+        # Track statistics
         self.stats_history = pd.DataFrame()
 
     def generate_signals(self, data: pd.DataFrame) -> StrategySignal:
-        """Genera segnali di mean reversion"""
-        # Calcola indicatori statistici
+        # Get required columns
         stats = self._calculate_statistics(data)
         
-        # Calcola indicatori tecnici
+        # Get technical indicators
         indicators = self._calculate_indicators(data)
         
-        # Verifica condizioni di mean reversion
+        # Check mean reversion conditions
         reversion_conditions = self._check_reversion_conditions(stats, indicators)
         
-        # Verifica filtri
+        # Check filters
         if not self._check_filters(data, stats, indicators):
             return self._generate_neutral_signal(data)
         
-        # Genera segnale se condizioni sono soddisfatte
+        # Generate signal
         if reversion_conditions['valid']:
             signal = self._generate_reversion_signal(
                 data, stats, indicators, reversion_conditions)
         else:
             signal = self._generate_neutral_signal(data)
             
-        # Aggiorna statistiche
+        # Update statistics
         self._update_statistics(stats, signal)
         
         return signal
 
     def _calculate_statistics(self, data: pd.DataFrame) -> Dict:
-        """Calcola statistiche per mean reversion"""
+        # Get basic statistics
         close = data['close']
         returns = close.pct_change()
         
-        # Calcola Z-Score
+        # Get Z-Score
         mean = close.rolling(self.zscore_period).mean()
         std = close.rolling(self.zscore_period).std()
         zscore = (close - mean) / std
         
-        # Calcola Half-Life
+        # Get Half-Life
         half_life = self._calculate_half_life(close)
         
-        # Calcola Hurst Exponent
+        # Get Hurst Exponent
         hurst = self._calculate_hurst_exponent(close)
         
-        # Beta e R-squared con la media
+        # Beta and R-squared media
         beta, r_squared = self._calculate_mean_regression_stats(close)
         
-        # Calcola velocità di mean reversion
+        # Mean reversion speed
         reversion_speed = self._calculate_reversion_speed(close, mean)
         
         return {
@@ -105,7 +103,7 @@ class MeanReversionStrategy(BaseStrategy):
         }
 
     def _calculate_indicators(self, data: pd.DataFrame) -> Dict:
-        """Calcola indicatori tecnici"""
+        # Get required columns for indicators
         close = data['close']
         high = data['high']
         low = data['low']
@@ -124,10 +122,10 @@ class MeanReversionStrategy(BaseStrategy):
         # Stochastic
         slowk, slowd = ta.STOCH(high, low, close)
         
-        # ATR per volatilità
+        # ATR for volatility
         atr = ta.ATR(high, low, close)
         
-        # CCI per estremità
+        # CCI for trend
         cci = ta.CCI(high, low, close)
         
         return {
@@ -144,28 +142,28 @@ class MeanReversionStrategy(BaseStrategy):
         }
 
     def _check_reversion_conditions(self, stats: Dict, indicators: Dict) -> Dict:
-        """Verifica condizioni per mean reversion"""
+        # Check conditions for mean reversion
         current_zscore = stats['zscore'].iloc[-1]
         current_rsi = indicators['rsi'].iloc[-1]
         current_cci = indicators['cci'].iloc[-1]
         
-        # Condizioni di oversold
+        # Conditions for oversold
         oversold_conditions = (
             current_zscore < -self.zscore_threshold and
             current_rsi < self.rsi_oversold and
             current_cci < -100
         )
         
-        # Condizioni di overbought
+        # Conditions for overbought
         overbought_conditions = (
             current_zscore > self.zscore_threshold and
             current_rsi > self.rsi_overbought and
             current_cci > 100
         )
         
-        # Verifica qualità del segnale
+        # Check if conditions are met
         if oversold_conditions or overbought_conditions:
-            # Calcola metriche addizionali
+            # Get additional statistics
             signal_quality = self._calculate_signal_quality(stats, indicators)
             
             return {
@@ -181,40 +179,40 @@ class MeanReversionStrategy(BaseStrategy):
 
     def _check_filters(self, data: pd.DataFrame, stats: Dict, 
                       indicators: Dict) -> bool:
-        """Applica filtri alla strategia"""
-        # Verifica volatilità
+        # Apply filters to the mean reversion signal
+        # Check volatility
         if not self._check_volatility_conditions(indicators):
             return False
             
-        # Verifica volume
+        # Check volume
         if self.volume_filter and not self._check_volume_filter(data):
             return False
             
-        # Verifica trend
+        # Check trend filter
         if self.trend_filter and not self._check_trend_filter(data, stats):
             return False
             
-        # Verifica mean reversion likelihood
+        # Check mean reversion likelihood
         if not self._check_mean_reversion_likelihood(stats):
             return False
             
         return True
 
     def _calculate_signal_quality(self, stats: Dict, indicators: Dict) -> float:
-        """Calcola la qualità del segnale di mean reversion"""
-        # Forza della deviazione
+        # Calculate signal quality based on statistics and indicators
+        # Z-Score strength
         zscore_strength = min(abs(stats['zscore'].iloc[-1]) / self.zscore_threshold, 1.0)
         
-        # Velocità di mean reversion
+        # Mean reversion speed
         reversion_strength = min(stats['reversion_speed'] / self.mean_reversion_threshold, 1.0)
         
-        # Qualità della correlazione con la media
+        # Quality of correlation
         correlation_quality = stats['r_squared']
         
-        # Qualità del pattern tecnico
+        # Quality of technical indicators
         technical_quality = self._calculate_technical_quality(indicators)
         
-        # Combina le metriche
+        # Combine all factors
         signal_quality = (
             zscore_strength * 0.3 +
             reversion_strength * 0.3 +
@@ -228,14 +226,14 @@ class MeanReversionStrategy(BaseStrategy):
                                  stats: Dict,
                                  indicators: Dict,
                                  conditions: Dict) -> StrategySignal:
-        """Genera segnale di mean reversion"""
+        # Generate mean reversion signal
         current_price = data['close'].iloc[-1]
         atr = indicators['atr'].iloc[-1]
         
-        # Calcola target basato sulla media
+        # Generate price target
         price_target = stats['mean'].iloc[-1]
         
-        # Calcola stop loss
+        # Generate stop loss
         stop_loss = self._calculate_stop_loss(
             current_price, 
             atr,
@@ -243,7 +241,7 @@ class MeanReversionStrategy(BaseStrategy):
             conditions['direction']
         )
         
-        # Calcola confidence
+        # Generate signal confidence
         confidence = self._calculate_signal_confidence(
             stats, indicators, conditions)
         
@@ -266,7 +264,7 @@ class MeanReversionStrategy(BaseStrategy):
         )
 
     def _calculate_half_life(self, prices: pd.Series) -> float:
-        """Calcola half-life della mean reversion"""
+        # Calculate half-life of mean reversion
         returns = prices.pct_change()
         lag_returns = returns.shift(1)
         lag_returns = lag_returns[1:]
@@ -280,7 +278,7 @@ class MeanReversionStrategy(BaseStrategy):
         return half_life
 
     def _calculate_hurst_exponent(self, prices: pd.Series) -> float:
-        """Calcola Hurst exponent"""
+        # Get Hurst Exponent
         lags = range(2, 100)
         tau = [np.sqrt(np.std(np.subtract(prices[lag:], prices[:-lag])))
                for lag in lags]
@@ -292,15 +290,15 @@ class MeanReversionStrategy(BaseStrategy):
 
     def _calculate_mean_regression_stats(self, 
                                        prices: pd.Series) -> Tuple[float, float]:
-        """Calcola statistiche di regressione verso la media"""
+        # Calculate statistics for mean reversion
         mean = prices.rolling(self.mean_period).mean()
         spread = prices - mean
         
-        # Calcola beta
+        # Generate beta and R-squared
         spread_lag = spread.shift(1)
         slope, intercept = np.polyfit(spread_lag.dropna(), spread.dropna(), 1)
         
-        # Calcola R-squared
+        # Generate R-squared
         correlation_matrix = np.corrcoef(spread_lag.dropna(), spread.dropna())
         r_squared = correlation_matrix[0,1]**2
         
@@ -308,40 +306,40 @@ class MeanReversionStrategy(BaseStrategy):
 
     def _calculate_reversion_speed(self, prices: pd.Series, 
                                  mean: pd.Series) -> float:
-        """Calcola velocità di mean reversion"""
+        # Calculate speed of mean reversion
         spread = prices - mean
         spread_changes = spread.diff()
         
-        # Calcola velocità media di ritorno
+        # Calculate reversion speed
         reversion_speed = -np.mean(spread * spread_changes)
         
         return reversion_speed
 
     def _check_mean_reversion_likelihood(self, stats: Dict) -> bool:
-        """Verifica probabilità di mean reversion"""
-        # Verifica Hurst exponent
+        # Check likelihood of mean reversion
+        # Check Hurst exponent
         if stats['hurst'] > 0.5:  # Trend following behavior
             return False
             
-        # Verifica half-life
+        # Check half-life
         if stats['half_life'] > self.max_holding_period:
             return False
             
-        # Verifica velocità di reversion
+        # Check mean reversion speed
         if stats['reversion_speed'] < self.mean_reversion_threshold:
             return False
             
         return True
 
     def get_required_columns(self) -> List[str]:
-        """Ritorna le colonne richieste dalla strategia"""
+        # Return the required columns for the strategy
         return ['open', 'high', 'low', 'close', 'volume']
 
     def get_min_required_history(self) -> int:
-        """Ritorna il minimo storico richiesto"""
+        # Return the minimum required history for the strategy
         return max(self.lookback_period, 100)  # Per Hurst calculation
 
     def _apply_strategy_filters(self, signal: StrategySignal,
                               data: pd.DataFrame) -> bool:
-        """Applica filtri specifici della strategia"""
-        return signal.confidence >= 0.6  # Minima confidenza richiesta
+        # Apply strategy-specific filters
+        return signal.confidence >= 0.6  # Minimum confidence

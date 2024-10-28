@@ -33,7 +33,7 @@ class WFAResult:
 
 class WalkForwardAnalyzer:
     def __init__(self, config: WFAConfig):
-        """Inizializza Walk Forward Analyzer"""
+        # Initialize the walk-forward analyzer
         self.config = config
         self.logger = logging.getLogger(__name__)
         
@@ -51,7 +51,7 @@ class WalkForwardAnalyzer:
                     strategy,
                     data: pd.DataFrame,
                     optimizer) -> Dict:
-        """Esegue l'analisi walk-forward"""
+        # Run the walk-forward analysis
         try:
             # Validate data
             if not self._validate_data(data):
@@ -79,7 +79,7 @@ class WalkForwardAnalyzer:
             raise
             
     def _generate_windows(self, data: pd.DataFrame) -> List[Tuple]:
-        """Genera finestre di analisi"""
+        # Generate analysis windows
         windows = []
         start_idx = 0
         
@@ -111,7 +111,7 @@ class WalkForwardAnalyzer:
                              windows: List[Tuple],
                              strategy,
                              optimizer) -> List[WFAResult]:
-        """Esegue analisi in parallelo"""
+        # Run parallel analysis 
         with ProcessPoolExecutor(max_workers=self.config.n_jobs) as executor:
             futures = []
             
@@ -132,7 +132,7 @@ class WalkForwardAnalyzer:
                                windows: List[Tuple],
                                strategy,
                                optimizer) -> List[WFAResult]:
-        """Esegue analisi sequenziale"""
+        # Run sequential analysis
         results = []
         
         for window in windows:
@@ -145,7 +145,7 @@ class WalkForwardAnalyzer:
                        window: Tuple,
                        strategy,
                        optimizer) -> WFAResult:
-        """Analizza una singola finestra"""
+       # Analyze a single window
         train_start, train_end, test_start, test_end = window
         
         # Split data
@@ -200,7 +200,7 @@ class WalkForwardAnalyzer:
                            train_data: pd.DataFrame,
                            parameters: Dict,
                            validation_percent: float) -> Dict:
-        """Valida i parametri su un subset dei dati di training"""
+        # Validate parameters on a subset of training data
         # Split training data for validation
         split_idx = int(len(train_data) * (1 - validation_percent))
         train_subset = train_data.iloc[:split_idx]
@@ -218,7 +218,7 @@ class WalkForwardAnalyzer:
                                   train_result: Dict,
                                   test_result: Dict,
                                   validation_result: Optional[Dict] = None) -> float:
-        """Calcola score di robustezza"""
+        # Calculate robustness score
         # Compare key metrics
         metrics_to_compare = [
             'sharpe_ratio',
@@ -247,7 +247,7 @@ class WalkForwardAnalyzer:
     def _calculate_consistency_score(self,
                                   train_result: Dict,
                                   test_result: Dict) -> float:
-        """Calcola score di consistenza"""
+        # Calculate consistency score
         # Compare return distributions
         train_returns = train_result.metrics.get('returns', pd.Series())
         test_returns = test_result.metrics.get('returns', pd.Series())
@@ -268,7 +268,7 @@ class WalkForwardAnalyzer:
         return (distribution_similarity + performance_stability) / 2
         
     def _analyze_results(self, results: List[WFAResult]) -> Dict:
-        """Analizza i risultati complessivi"""
+        # Analyze the walk-forward results
         analysis = {
             'performance': self._analyze_performance(results),
             'parameters': self._analyze_parameters(results),
@@ -279,7 +279,7 @@ class WalkForwardAnalyzer:
         return analysis
         
     def _analyze_performance(self, results: List[WFAResult]) -> Dict:
-        """Analizza le performance"""
+        # Analyze the performance of the strategy
         train_metrics = pd.DataFrame([r.train_metrics for r in results])
         test_metrics = pd.DataFrame([r.test_metrics for r in results])
         
@@ -301,7 +301,7 @@ class WalkForwardAnalyzer:
         }
         
     def _analyze_parameters(self, results: List[WFAResult]) -> Dict:
-        """Analizza la stabilità dei parametri"""
+        # Analyze the parameters of the strategy
         parameters = pd.DataFrame([r.parameters for r in results])
         
         return {
@@ -312,7 +312,7 @@ class WalkForwardAnalyzer:
         }
         
     def _analyze_robustness(self, results: List[WFAResult]) -> Dict:
-        """Analizza la robustezza della strategia"""
+        # Analyze the robustness of the strategy
         robustness_scores = [r.robustness_score for r in results]
         
         return {
@@ -324,7 +324,7 @@ class WalkForwardAnalyzer:
         }
         
     def _analyze_consistency(self, results: List[WFAResult]) -> Dict:
-        """Analizza la consistenza della strategia"""
+        # Analyze the consistency of the strategy
         consistency_scores = [r.consistency_score for r in results]
         
         return {

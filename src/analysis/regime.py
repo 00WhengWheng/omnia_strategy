@@ -17,23 +17,23 @@ class MarketRegimeAnalyzer(BaseAnalyzer):
         self.regime_probabilities = {regime: 0.0 for regime in MarketRegime}
         
     def analyze(self, data: pd.DataFrame) -> AnalysisResult:
-        """Analizza il regime di mercato corrente"""
+        # Analyze the market regime
         if not self.validate_data(data):
             raise ValueError("Invalid data for regime analysis")
             
-        # Calcola metriche di regime
+        # Get the components
         volatility = self._calculate_volatility(data)
         correlation = self._calculate_correlation(data)
         trend = self._calculate_trend(data)
         
-        # Determina il regime
+        # Determine the regime
         regime = self._determine_regime(volatility, correlation, trend)
         
-        # Calcola probabilità dei regimi
+        # Calculate regime probabilities
         probabilities = self._calculate_regime_probabilities(
             volatility, correlation, trend)
             
-        # Calcola confidenza
+        # Calculate confidence in regime determination
         confidence = self._calculate_confidence(probabilities)
         
         result = AnalysisResult(
@@ -55,19 +55,19 @@ class MarketRegimeAnalyzer(BaseAnalyzer):
         return result
         
     def _calculate_volatility(self, data: pd.DataFrame) -> float:
-        """Calcola la volatilità realizzata"""
+        # Calculate the annualized volatility
         returns = data['close'].pct_change()
         return returns.std() * np.sqrt(252) * 100
         
     def _calculate_correlation(self, data: pd.DataFrame) -> float:
-        """Calcola la correlazione cross-asset"""
+        # Get the correlation between close prices and other assets
         if 'other_assets' in data.columns:
             corr_matrix = data[['close', 'other_assets']].corr()
             return corr_matrix.iloc[0, 1]
         return 0.0
         
     def _calculate_trend(self, data: pd.DataFrame) -> float:
-        """Calcola la forza del trend"""
+        # Calculate the trend strength
         prices = data['close']
         sma_fast = prices.rolling(50).mean()
         sma_slow = prices.rolling(200).mean()
@@ -77,7 +77,7 @@ class MarketRegimeAnalyzer(BaseAnalyzer):
         
     def _determine_regime(self, volatility: float, 
                          correlation: float, trend: float) -> MarketRegime:
-        """Determina il regime di mercato"""
+        # Determine the market regime based on the components
         if volatility > self.vol_threshold and correlation > self.corr_threshold:
             return MarketRegime.CRISIS
             
@@ -95,7 +95,7 @@ class MarketRegimeAnalyzer(BaseAnalyzer):
     def _calculate_regime_probabilities(self, volatility: float,
                                       correlation: float, 
                                       trend: float) -> Dict[str, float]:
-        """Calcola probabilità per ogni regime"""
+        # Calculate the probabilities of each regime
         probs = {}
         
         for regime in MarketRegime:
@@ -120,7 +120,7 @@ class MarketRegimeAnalyzer(BaseAnalyzer):
                 
             probs[regime.value] = np.clip(prob, 0, 1)
             
-        # Normalizza probabilità
+        # Normalize the probabilities
         total = sum(probs.values())
         if total > 0:
             probs = {k: v/total for k, v in probs.items()}
@@ -128,18 +128,18 @@ class MarketRegimeAnalyzer(BaseAnalyzer):
         return probs
         
     def _calculate_confidence(self, probabilities: Dict[str, float]) -> float:
-        """Calcola la confidenza nella determinazione del regime"""
-        # Maggiore confidenza se una probabilità domina le altre
+        # Calculate the confidence in the regime determination
+        # Get the difference between the highest and second highest probabilities
         max_prob = max(probabilities.values())
         second_max = sorted(probabilities.values())[-2]
         
-        # Differenza tra la probabilità più alta e la seconda più alta
+        # 
         prob_diff = max_prob - second_max
         
         return np.clip(prob_diff * 2, 0, 1)  # Scala 0-1
         
     def _regime_to_value(self, regime: MarketRegime) -> float:
-        """Converte il regime in un valore numerico"""
+        # Convert the regime to a numerical value
         regime_values = {
             MarketRegime.CRISIS: -1.0,
             MarketRegime.RISK_OFF: -0.5,

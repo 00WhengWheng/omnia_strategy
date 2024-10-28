@@ -31,14 +31,13 @@ class StrategySignal:
     metadata: Dict
 
 class BaseStrategy(ABC):
-    """Classe base per tutte le strategie di trading"""
-    
+    # Base class for trading strategies
     def __init__(self, config: Dict):
         self.config = config
         self.name = config.get('name', self.__class__.__name__)
         self.timeframe = TimeFrame(config.get('timeframe', 'D1'))
         
-        # Stato della strategia
+        # Strategy state
         self.state = StrategyState(
             is_active=True,
             current_position='flat',
@@ -58,59 +57,59 @@ class BaseStrategy(ABC):
         # Risk management
         self.risk_manager = self._initialize_risk_manager()
         
-        # Analizzatori
+        # Analyzers
         self.analyzers = self._initialize_analyzers()
         
-        # Setup addizionale specifico della strategia
+        # Setup the strategy
         self._initialize_strategy()
     
     @abstractmethod
     def _initialize_strategy(self) -> None:
-        """Inizializzazione specifica della strategia"""
+        # Initialize the strategy
         pass
     
     @abstractmethod
     def generate_signals(self, data: pd.DataFrame) -> StrategySignal:
-        """Genera segnali di trading"""
+        # Generate trading signals
         pass
 
     def update(self, data: pd.DataFrame) -> Optional[StrategySignal]:
-        """Aggiorna la strategia con nuovi dati"""
+        # Update the strategy with new data
         if not self.state.is_active:
             return None
             
-        # Valida i dati
+        # Validate the input data
         if not self._validate_data(data):
             return None
             
-        # Aggiorna analizzatori
+        # Update analyzers
         self._update_analyzers(data)
         
-        # Genera segnali
+        # Generate signals
         signal = self.generate_signals(data)
         
-        # Applica filtri
+        # Apply filters and risk management
         if not self._apply_filters(signal, data):
             return None
             
-        # Applica risk management
+        # Adjust signal based on risk management
         signal = self.risk_manager.adjust_signal(signal, self.state)
         
-        # Aggiorna stato
+        # Apply the signal
         self._update_state(signal)
         
-        # Traccia il segnale
+        # Track the signal
         self._track_signal(signal)
         
         return signal
     
     def _initialize_risk_manager(self):
-        """Inizializza il gestore del rischio"""
+        # Initialize the risk manager
         from ..risk.manager import RiskManager
         return RiskManager(self.config.get('risk', {}))
     
     def _initialize_analyzers(self) -> Dict:
-        """Inizializza gli analizzatori richiesti"""
+        # Initialize the analyzers
         return {
             'technical': self._create_technical_analyzer(),
             'volatility': self._create_volatility_analyzer(),
@@ -118,7 +117,7 @@ class BaseStrategy(ABC):
         }
     
     def _validate_data(self, data: pd.DataFrame) -> bool:
-        """Valida i dati in input"""
+        # Validate the input data
         required_columns = self.get_required_columns()
         if not all(col in data.columns for col in required_columns):
             return False
@@ -129,13 +128,13 @@ class BaseStrategy(ABC):
         return True
     
     def _update_analyzers(self, data: pd.DataFrame) -> None:
-        """Aggiorna tutti gli analizzatori"""
+        # Update the analyzers with new data
         for analyzer in self.analyzers.values():
             analyzer.analyze(data)
     
     def _apply_filters(self, signal: StrategySignal, 
                       data: pd.DataFrame) -> bool:
-        """Applica filtri al segnale"""
+        # Apply filters to the signal
         # Time filters
         if not self._check_time_filters(signal.timestamp):
             return False
@@ -155,7 +154,7 @@ class BaseStrategy(ABC):
         return True
     
     def _update_state(self, signal: StrategySignal) -> None:
-        """Aggiorna lo stato della strategia"""
+        # Update the strategy state based on the signal
         # Update position state
         if signal.direction != self.state.current_position:
             self._handle_position_change(signal)
@@ -171,7 +170,7 @@ class BaseStrategy(ABC):
         })
     
     def _handle_position_change(self, signal: StrategySignal) -> None:
-        """Gestisce il cambio di posizione"""
+        # Handle a change in position
         # Close current position if exists
         if self.state.current_position != 'flat':
             self._close_position(signal.timestamp, signal.entry_price)
@@ -181,7 +180,7 @@ class BaseStrategy(ABC):
             self._open_position(signal)
     
     def _open_position(self, signal: StrategySignal) -> None:
-        """Apre una nuova posizione"""
+        # Opens a new position based on the signal
         self.state.current_position = signal.direction
         self.state.entry_price = signal.entry_price
         self.state.entry_time = signal.timestamp
@@ -191,7 +190,7 @@ class BaseStrategy(ABC):
         self._track_trade('open', signal)
     
     def _close_position(self, timestamp: datetime, price: float) -> None:
-        """Chiude la posizione corrente"""
+        # Close the current position
         # Calculate P&L
         pnl = self._calculate_pnl(price)
         
@@ -205,12 +204,12 @@ class BaseStrategy(ABC):
         self._track_trade('close', price, pnl)
     
     def _calculate_position_size(self, signal: StrategySignal) -> float:
-        """Calcola la dimensione della posizione"""
+        # Calculate the position size based on the signal
         return self.risk_manager.calculate_position_size(
             signal, self.state.risk_per_trade)
     
     def _calculate_pnl(self, current_price: float) -> float:
-        """Calcola il P&L della posizione"""
+        # Calculate the profit or loss of the current position
         if not self.state.entry_price:
             return 0.0
             
@@ -221,11 +220,11 @@ class BaseStrategy(ABC):
         return price_diff * self.state.position_size
     
     def _track_signal(self, signal: StrategySignal) -> None:
-        """Traccia il segnale generato"""
+        # Track the trading signal
         self.signals_history.append(signal)
     
     def _track_trade(self, action: str, data: any, pnl: float = None) -> None:
-        """Traccia l'attività di trading"""
+        # Track the trading history
         trade = {
             'timestamp': datetime.now(),
             'action': action,
@@ -239,21 +238,21 @@ class BaseStrategy(ABC):
     @abstractmethod
     def _apply_strategy_filters(self, signal: StrategySignal,
                               data: pd.DataFrame) -> bool:
-        """Applica filtri specifici della strategia"""
+        # Apply strategy specific filters
         pass
     
     @abstractmethod
     def get_required_columns(self) -> List[str]:
-        """Ritorna le colonne richieste dalla strategia"""
+        # Get the required columns for the analysis
         pass
     
     @abstractmethod
     def get_min_required_history(self) -> int:
-        """Ritorna il minimo storico richiesto"""
+        # Get the minimum required history length
         pass
     
     def get_strategy_state(self) -> Dict:
-        """Ritorna lo stato corrente della strategia"""
+        # Get the current state of the strategy
         return {
             'name': self.name,
             'active': self.state.is_active,
@@ -266,7 +265,7 @@ class BaseStrategy(ABC):
         }
     
     def get_performance_metrics(self) -> Dict:
-        """Calcola e ritorna le metriche di performance"""
+        # Get the performance metrics of the strategy
         if not self.trades_history:
             return {}
             
@@ -283,7 +282,7 @@ class BaseStrategy(ABC):
         }
 
     def _check_time_filters(self, timestamp: datetime) -> bool:
-        """Verifica filtri temporali"""
+        # Check time filters
         # Trading hours filter
         if not self._is_trading_hour(timestamp):
             return False
@@ -295,7 +294,7 @@ class BaseStrategy(ABC):
         return True
         
     def _check_market_conditions(self, data: pd.DataFrame) -> bool:
-        """Verifica condizioni di mercato"""
+        # Check market conditions
         # Volatility filter
         if not self._check_volatility(data):
             return False
@@ -307,7 +306,7 @@ class BaseStrategy(ABC):
         return True
         
     def _check_position_filters(self, signal: StrategySignal) -> bool:
-        """Verifica filtri relativi alla posizione"""
+        # Check position filters
         # Max open positions
         if not self._check_max_positions():
             return False

@@ -20,16 +20,16 @@ class BaseAnalyzer(ABC):
     
     @abstractmethod
     def _initialize_analyzer(self) -> None:
-        """Inizializza l'analizzatore specifico"""
+        # Initialize the analyzer
         pass
     
     @abstractmethod
     def analyze(self, data: pd.DataFrame) -> AnalysisResult:
-        """Esegue l'analisi sui dati"""
+        # Execute the analysis
         pass
     
     def update_history(self, result: AnalysisResult) -> None:
-        """Aggiorna lo storico dei risultati"""
+        # Update the history of results
         new_row = {
             'timestamp': result.timestamp,
             'value': result.value,
@@ -43,13 +43,13 @@ class BaseAnalyzer(ABC):
         ])
     
     def get_history(self, lookback: Optional[int] = None) -> pd.DataFrame:
-        """Recupera lo storico dei risultati"""
+        # Get the history of results
         if lookback:
             return self.results_history.tail(lookback)
         return self.results_history
 
     def validate_data(self, data: pd.DataFrame) -> bool:
-        """Valida i dati in input"""
+        # Validate the input data
         if data.empty:
             return False
         required_columns = self.get_required_columns()
@@ -57,6 +57,6 @@ class BaseAnalyzer(ABC):
 
     @abstractmethod
     def get_required_columns(self) -> list:
-        """Ritorna le colonne richieste per l'analisi"""
+        # Get the required columns for the analysis
         pass
     

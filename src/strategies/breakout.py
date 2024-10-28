@@ -8,18 +8,18 @@ from ..core.constants import TimeFrame
 
 class BreakoutStrategy(BaseStrategy):
     def _initialize_strategy(self) -> None:
-        """Inizializza i parametri specifici della strategia"""
-        # Parametri Breakout
+        # Initialize the breakout strategy
+        # Parameters for breakout detection
         self.breakout_period = self.config.get('breakout_period', 20)
         self.confirmation_period = self.config.get('confirmation_period', 3)
         self.volatility_lookback = self.config.get('volatility_lookback', 20)
         
-        # Livelli di Breakout
+        # Key levels for breakout detection
         self.support_resistance_periods = [20, 50, 200]  # Multiple timeframes
         self.pivot_points_lookback = self.config.get('pivot_points_lookback', 10)
         self.fibonacci_levels = self.config.get('fibonacci_levels', True)
         
-        # Filtri
+        # Volume and volatility thresholds
         self.volume_threshold = self.config.get('volume_threshold', 1.5)
         self.volatility_threshold = self.config.get('volatility_threshold', 1.2)
         self.min_consolidation_bars = self.config.get('min_consolidation_bars', 5)
@@ -36,26 +36,26 @@ class BreakoutStrategy(BaseStrategy):
         self.successful_breakout_count = 0
 
     def generate_signals(self, data: pd.DataFrame) -> StrategySignal:
-        """Genera segnali di breakout"""
-        # Identifica livelli chiave
+        # Generate breakout signals
+        # Identify key levels
         levels = self._identify_key_levels(data)
         
-        # Calcola indicatori
+        # Calculate indicators
         indicators = self._calculate_indicators(data)
         
-        # Identifica breakout
+        # Identify breakout
         breakout = self._identify_breakout(data, levels, indicators)
         
-        # Verifica filtri
+        # Check filters
         if not self._check_filters(data, breakout, indicators):
             return self._generate_neutral_signal(data)
         
-        # Genera segnale se breakout è valido
+        # Generate signal based on breakout
         if breakout['valid']:
             signal = self._generate_breakout_signal(
                 data, breakout, levels, indicators)
             
-            # Aggiorna statistiche
+            # Update breakout statistics
             self._update_breakout_statistics(breakout, signal)
         else:
             signal = self._generate_neutral_signal(data)
@@ -63,17 +63,17 @@ class BreakoutStrategy(BaseStrategy):
         return signal
 
     def _identify_key_levels(self, data: pd.DataFrame) -> Dict:
-        """Identifica livelli chiave per breakout"""
+        # Identify key levels for breakout detection
         # Support & Resistance levels
         sr_levels = self._calculate_support_resistance(data)
         
         # Pivot Points
         pivots = self._calculate_pivot_points(data)
         
-        # Range di consolidamento
+        # Range of consolidation
         consolidation = self._identify_consolidation_range(data)
         
-        # Livelli Fibonacci se abilitati
+        # Levels based on Fibonacci retracement
         fib_levels = self._calculate_fibonacci_levels(data) if self.fibonacci_levels else None
         
         # Volume Profile levels
@@ -88,15 +88,15 @@ class BreakoutStrategy(BaseStrategy):
         }
 
     def _calculate_support_resistance(self, data: pd.DataFrame) -> Dict:
-        """Calcola livelli di supporto e resistenza"""
+        # Calculate support and resistance levels
         levels = {}
         
         for period in self.support_resistance_periods:
-            # Calcola massimi e minimi del periodo
+            # Calculate rolling high and low levels
             high_levels = data['high'].rolling(period).max()
             low_levels = data['low'].rolling(period).min()
             
-            # Trova cluster di livelli
+            # Find clusters of price levels
             high_clusters = self._cluster_price_levels(high_levels)
             low_clusters = self._cluster_price_levels(low_levels)
             
@@ -108,10 +108,9 @@ class BreakoutStrategy(BaseStrategy):
         return levels
 
     def _calculate_pivot_points(self, data: pd.DataFrame) -> Dict:
-        """Calcola pivot points"""
+        # Calculate pivot points
         pivots = {}
         
-        # Calcola pivot classici
         high = data['high'].iloc[-self.pivot_points_lookback:]
         low = data['low'].iloc[-self.pivot_points_lookback:]
         close = data['close'].iloc[-self.pivot_points_lookback:]
@@ -133,15 +132,15 @@ class BreakoutStrategy(BaseStrategy):
         return pivots
 
     def _identify_consolidation_range(self, data: pd.DataFrame) -> Dict:
-        """Identifica range di consolidamento"""
-        # Calcola volatilità rolling
+        # Identify consolidation range
+        # Calculate volatility
         volatility = data['close'].rolling(self.volatility_lookback).std()
         avg_volatility = volatility.mean()
         
-        # Identifica periodi di bassa volatilità
+        # Check for low volatility periods
         low_vol_periods = volatility < (avg_volatility * 0.8)
         
-        # Trova l'ultimo range di consolidamento
+        # Check for recent consolidation
         if low_vol_periods.iloc[-self.min_consolidation_bars:].all():
             recent_data = data.iloc[-self.min_consolidation_bars:]
             
@@ -156,8 +155,8 @@ class BreakoutStrategy(BaseStrategy):
         return {'valid': False}
 
     def _calculate_volume_profile_levels(self, data: pd.DataFrame) -> Dict:
-        """Calcola livelli basati sul volume profile"""
-        # Crea price bins
+        # Calculate volume profile levels
+        # Calculate price range
         price_range = np.linspace(
             data['low'].min(),
             data['high'].max(),
@@ -169,7 +168,7 @@ class BreakoutStrategy(BaseStrategy):
             mask = (data['close'] >= price_range[i]) & (data['close'] < price_range[i+1])
             volume_profile[price_range[i]] = data.loc[mask, 'volume'].sum()
             
-        # Trova high volume nodes
+        # Find top volume levels
         sorted_levels = sorted(
             volume_profile.items(),
             key=lambda x: x[1],
@@ -184,22 +183,22 @@ class BreakoutStrategy(BaseStrategy):
     def _identify_breakout(self, data: pd.DataFrame,
                           levels: Dict,
                           indicators: Dict) -> Dict:
-        """Identifica pattern di breakout"""
+        # Identify breakout based on key levels
         current_price = data['close'].iloc[-1]
         current_volume = data['volume'].iloc[-1]
         
-        # Verifica breakout dai livelli chiave
+        # Check resistance and support breakouts
         resistance_break = self._check_resistance_breakout(
             current_price, levels, indicators)
         support_break = self._check_support_breakout(
             current_price, levels, indicators)
         
-        # Verifica la forza del breakout
+        # Check for valid breakout
         if resistance_break['valid'] or support_break['valid']:
             breakout_strength = self._calculate_breakout_strength(
                 data, current_price, current_volume, indicators)
             
-            # Determina direzione e dettagli
+            # Determine breakout direction
             if resistance_break['valid']:
                 direction = 'long'
                 level_broken = resistance_break['level']
@@ -224,13 +223,13 @@ class BreakoutStrategy(BaseStrategy):
                                    current_price: float,
                                    current_volume: float,
                                    indicators: Dict) -> float:
-        """Calcola la forza del breakout"""
-        # Componenti della forza del breakout
+        # Calculate breakout strength
+        # Calculate price momentum
         price_momentum = self._calculate_momentum_score(data)
         volume_strength = current_volume / indicators['volume_sma'].iloc[-1]
         volatility_ratio = indicators['atr'].iloc[-1] / indicators['atr'].rolling(20).mean().iloc[-1]
         
-        # Calcola score composito
+        # Combine components
         strength = (
             price_momentum * 0.4 +
             min(volume_strength, 3.0) / 3.0 * 0.4 +
@@ -243,11 +242,11 @@ class BreakoutStrategy(BaseStrategy):
                                 breakout: Dict,
                                 levels: Dict,
                                 indicators: Dict) -> StrategySignal:
-        """Genera segnale di breakout"""
+        # Generate breakout signal
         current_price = data['close'].iloc[-1]
         atr = indicators['atr'].iloc[-1]
         
-        # Calcola target basato sui livelli successivi
+        # Generate stop loss and target levels
         if breakout['direction'] == 'long':
             next_level = self._find_next_resistance(current_price, levels)
             stop_loss = current_price - (atr * self.atr_multiplier)
@@ -255,14 +254,14 @@ class BreakoutStrategy(BaseStrategy):
             next_level = self._find_next_support(current_price, levels)
             stop_loss = current_price + (atr * self.atr_multiplier)
             
-        # Calcola target multipli
+        # Generate target levels
         targets = self._calculate_breakout_targets(
             current_price,
             next_level,
             breakout['direction']
         )
         
-        # Calcola confidenza
+        # Calculate confidence
         confidence = self._calculate_breakout_confidence(
             breakout, indicators)
         
@@ -286,7 +285,7 @@ class BreakoutStrategy(BaseStrategy):
     def _check_filters(self, data: pd.DataFrame,
                       breakout: Dict,
                       indicators: Dict) -> bool:
-        """Applica filtri per breakout"""
+        # Check breakout filters
         if not breakout['valid']:
             return False
             
@@ -308,22 +307,22 @@ class BreakoutStrategy(BaseStrategy):
 
     def _detect_false_breakout_pattern(self, data: pd.DataFrame,
                                      breakout: Dict) -> bool:
-        """Rileva pattern di falso breakout"""
-        # Verifica price action recente
+        # Detect false breakout patterns
+        # Check for recent consolidation
         recent_close = data['close'].iloc[-1]
         recent_high = data['high'].iloc[-1]
         recent_low = data['low'].iloc[-1]
         
         if breakout['direction'] == 'long':
-            # Verifica se il prezzo è tornato sotto il livello dopo il breakout
+            # Check for bearish engulfing pattern
             return recent_close < breakout['level_broken']
         else:
-            # Verifica se il prezzo è tornato sopra il livello dopo il breakout
+            # Check for bullish engulfing pattern
             return recent_close > breakout['level_broken']
 
     def _update_breakout_statistics(self, breakout: Dict,
                                   signal: StrategySignal) -> None:
-        """Aggiorna statistiche dei breakout"""
+        # Update breakout statistics
         self.breakout_history.append({
             'timestamp': signal.timestamp,
             'direction': breakout['direction'],
@@ -334,14 +333,14 @@ class BreakoutStrategy(BaseStrategy):
         })
 
     def get_required_columns(self) -> List[str]:
-        """Ritorna le colonne richieste dalla strategia"""
+        # Get the required columns for the strategy
         return ['open', 'high', 'low', 'close', 'volume']
 
     def get_min_required_history(self) -> int:
-        """Ritorna il minimo storico richiesto"""
+        # Get the minimum required history length
         return max(self.support_resistance_periods)
 
     def _apply_strategy_filters(self, signal: StrategySignal,
                               data: pd.DataFrame) -> bool:
-        """Applica filtri specifici della strategia"""
-        return signal.confidence >= 0.7  # Alta confidenza richiesta per breakout
+        # Apply strategy-specific filters
+        return signal.confidence >= 0.7  # High confidence

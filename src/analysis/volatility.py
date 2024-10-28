@@ -17,13 +17,13 @@ class VolatilityRegime:
 
 class VolatilityAnalyzer(BaseAnalyzer):
     def _initialize_analyzer(self) -> None:
-        """Inizializza l'analizzatore della volatilità"""
-        # Parametri base
+        # Initialize the volatility analyzer
+        # Configurations
         self.lookback_window = self.config.get('volatility.lookback_window', 252)
         self.forecast_horizon = self.config.get('volatility.forecast_horizon', 5)
         self.min_history = self.config.get('volatility.min_history', 30)
         
-        # Thresholds per regimi di volatilità
+        # Volatility thresholds
         self.vol_thresholds = {
             'low': self.config.get('volatility.thresholds.low', 10),
             'medium': self.config.get('volatility.thresholds.medium', 20),
@@ -31,41 +31,41 @@ class VolatilityAnalyzer(BaseAnalyzer):
             'extreme': self.config.get('volatility.thresholds.extreme', 40)
         }
         
-        # Modelli di volatilità
+        # Volatility models
         self.models = {
             'garch': None,  # GARCH model
             'ewma': None,   # EWMA model
             'range': None   # Range-based model
         }
         
-        # Cache per risultati
+        # Volatility cache
         self.cache = {}
         self.last_update = None
 
     def analyze(self, data: pd.DataFrame) -> AnalysisResult:
-        """Esegue l'analisi completa della volatilità"""
+        # Execute the volatility analysis
         if not self.validate_data(data):
             raise ValueError("Invalid data for volatility analysis")
 
-        # Calcola diverse misure di volatilità
+        # Get the latest data
         realized_vol = self._calculate_realized_volatility(data)
         implied_vol = self._calculate_implied_volatility(data)
         range_vol = self._calculate_range_volatility(data)
         
-        # Aggiorna modelli di volatilità
+        # Update volatility models
         self._update_volatility_models(data)
         
-        # Genera previsioni
+        # Generate volatility forecasts
         forecasts = self._generate_volatility_forecasts(data)
         
-        # Identifica regime corrente
+        # Identify current volatility regime
         current_regime = self._identify_volatility_regime(
             realized_vol, implied_vol, range_vol)
         
-        # Analizza pattern di volatilità
+        # Analyze volatility patterns
         patterns = self._analyze_volatility_patterns(data)
         
-        # Calcola segnale composito
+        # Calculate final signal
         signal = self._calculate_volatility_signal(
             realized_vol,
             implied_vol,
@@ -75,7 +75,7 @@ class VolatilityAnalyzer(BaseAnalyzer):
             patterns
         )
         
-        # Calcola confidenza
+        # Calculate confidence
         confidence = self._calculate_volatility_confidence(
             realized_vol,
             implied_vol,
@@ -107,20 +107,20 @@ class VolatilityAnalyzer(BaseAnalyzer):
         return result
 
     def _calculate_realized_volatility(self, data: pd.DataFrame) -> Dict:
-        """Calcola la volatilità realizzata usando diversi metodi"""
+        # Calculate and analyze realized volatility
         returns = data['close'].pct_change().dropna()
         
-        # Volatilità standard
+        # Standard volatility
         std_vol = returns.std() * np.sqrt(252)
         
-        # Volatilità rolling
+        # Rolling volatility
         rolling_vol = returns.rolling(
             window=self.lookback_window).std() * np.sqrt(252)
         
-        # Volatilità parkinson (high-low based)
+        # Parkinson volatility (High-Low based)
         hl_vol = self._calculate_parkinson_volatility(data)
         
-        # Volatilità yang-zhang (OHLC based)
+        # Yang-Zhang volatility (OHLC based)
         yz_vol = self._calculate_yang_zhang_volatility(data)
         
         return {
@@ -132,14 +132,14 @@ class VolatilityAnalyzer(BaseAnalyzer):
         }
 
     def _calculate_implied_volatility(self, data: pd.DataFrame) -> Dict:
-        """Calcola e analizza la volatilità implicita"""
-        # Se disponibili dati di opzioni
+        # Calculate and analyze implied volatility
+        # If VIX is available, use it for analysis
         if 'vix' in data.columns:
             vix = data['vix']
             vix_term_structure = self._analyze_vix_term_structure(data)
             skew = self._calculate_volatility_skew(data)
         else:
-            # Usa proxy della volatilità
+            # Otherwise, use a proxy for VIX
             vix = self._calculate_volatility_proxy(data)
             vix_term_structure = None
             skew = None
@@ -152,7 +152,7 @@ class VolatilityAnalyzer(BaseAnalyzer):
         }
 
     def _calculate_range_volatility(self, data: pd.DataFrame) -> Dict:
-        """Calcola volatilità basata su range di prezzo"""
+        # Calculate and analyze range-based volatility
         # True Range
         tr = self._calculate_true_range(data)
         
@@ -170,10 +170,10 @@ class VolatilityAnalyzer(BaseAnalyzer):
         }
 
     def _update_volatility_models(self, data: pd.DataFrame) -> None:
-        """Aggiorna i modelli di volatilità"""
+        # Update volatility models
         returns = data['close'].pct_change().dropna()
         
-        # Aggiorna GARCH model
+        # Update GARCH model
         self.models['garch'] = arch_model(
             returns,
             vol='Garch',
@@ -181,14 +181,14 @@ class VolatilityAnalyzer(BaseAnalyzer):
             q=1
         ).fit(disp='off')
         
-        # Aggiorna EWMA
+        # Update EWMA model
         self.models['ewma'] = self._calculate_ewma_volatility(returns)
         
-        # Aggiorna Range-based model
+        # Update range-based model
         self.models['range'] = self._update_range_model(data)
 
     def _generate_volatility_forecasts(self, data: pd.DataFrame) -> Dict:
-        """Genera previsioni di volatilità"""
+        # Generate volatility forecasts
         forecasts = {}
         
         # GARCH forecast
@@ -209,7 +209,7 @@ class VolatilityAnalyzer(BaseAnalyzer):
                 self.models['range'], self.forecast_horizon)
             forecasts['range'] = range_forecast
         
-        # Combina le previsioni
+        # Combine forecasts
         forecasts['combined'] = self._combine_volatility_forecasts(forecasts)
         
         return forecasts
@@ -218,15 +218,15 @@ class VolatilityAnalyzer(BaseAnalyzer):
                                   realized_vol: Dict,
                                   implied_vol: Dict,
                                   range_vol: Dict) -> VolatilityRegime:
-        """Identifica il regime corrente di volatilità"""
-        # Calcola volatilità composita
+        # Identify the current volatility regime
+        # Generate composite volatility
         composite_vol = (
             realized_vol['current'] * 0.4 +
             implied_vol['current'] * 0.4 +
             range_vol['current'] * 0.2
         )
         
-        # Determina il regime
+        # Identify regime level
         for level, threshold in sorted(
             self.vol_thresholds.items(),
             key=lambda x: x[1]
@@ -234,10 +234,10 @@ class VolatilityAnalyzer(BaseAnalyzer):
             if composite_vol <= threshold:
                 break
         
-        # Calcola persistenza
+        # Calculate regime persistence
         persistence = self._calculate_regime_persistence(composite_vol)
         
-        # Genera previsione per il regime
+        # Generate regime forecast
         regime_forecast = self._forecast_regime_transition(
             level, persistence, composite_vol)
         
@@ -250,16 +250,16 @@ class VolatilityAnalyzer(BaseAnalyzer):
         )
 
     def _analyze_volatility_patterns(self, data: pd.DataFrame) -> Dict:
-        """Analizza pattern nella volatilità"""
+        # Analyze volatility patterns
         vol = self._calculate_realized_volatility(data)['rolling']
         
-        # Identifica cicli di volatilità
+        # Identify volatility cycles
         cycles = self._identify_volatility_cycles(vol)
         
-        # Trova cluster di volatilità
+        # Identify volatility clusters
         clusters = self._identify_volatility_clusters(vol)
         
-        # Analizza asimmetrie
+        # Analyze volatility asymmetry
         asymmetry = self._analyze_volatility_asymmetry(vol, data)
         
         return {
@@ -276,7 +276,7 @@ class VolatilityAnalyzer(BaseAnalyzer):
                                    forecasts: Dict,
                                    regime: VolatilityRegime,
                                    patterns: Dict) -> float:
-        """Calcola il segnale finale di volatilità"""
+        # Calculate the final volatility signal
         # Current state assessment
         current_state = self._assess_current_volatility_state(
             realized_vol, implied_vol, range_vol)
@@ -304,7 +304,7 @@ class VolatilityAnalyzer(BaseAnalyzer):
                                       realized_vol: Dict,
                                       implied_vol: Dict,
                                       forecasts: Dict) -> float:
-        """Calcola la confidenza nella analisi della volatilità"""
+        # Calculate the confidence in the volatility signal
         # Model agreement
         model_agreement = self._calculate_model_agreement(
             realized_vol, implied_vol, forecasts)
@@ -325,11 +325,11 @@ class VolatilityAnalyzer(BaseAnalyzer):
         return np.clip(confidence, 0, 1)
 
     def get_required_columns(self) -> list:
-        """Ritorna le colonne richieste per l'analisi"""
+        # Specify the required columns for volatility analysis
         return ['open', 'high', 'low', 'close', 'volume']
 
     def get_volatility_summary(self) -> Dict:
-        """Fornisce un sommario della volatilità corrente"""
+        # Get the latest current volatility summary
         if self.results_history.empty:
             return {}
             
