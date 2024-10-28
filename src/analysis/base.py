@@ -59,4 +59,3 @@ class BaseAnalyzer(ABC):
     def get_required_columns(self) -> list:
         # Get the required columns for the analysis
         pass
-    
