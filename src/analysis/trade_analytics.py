@@ -27,7 +27,6 @@ class TradeMetrics:
     sharpe_ratio: float
     sortino_ratio: float
 
-'''
 class TradeAnalytics:
     def __init__(self, config: Dict):
         """Inizializza Trade Analytics Engine"""
@@ -350,46 +349,3 @@ class TradeAnalytics:
         
         plt.tight_layout()
         return fig
-'''
-class TradeAnalytics:
-    def __init__(self, config: Dict):
-        # Method to initialize the Trade Analytics Engine
-        self.config = config
-        
-        # Storage for analyses
-        self.trade_metrics = None
-        self.trade_distributions = {}
-        self.trade_patterns = {}
-        self.time_analysis = {}
-        self.risk_analysis = {}
-        
-        # Performance tracking
-        self.equity_curve = pd.Series(dtype="float64")
-        self.drawdown_curve = pd.Series(dtype="float64")
-        self.monthly_returns = pd.Series(dtype="float64")
-        
-        # Analysis settings
-        self.min_trades = config.get('min_trades', 30)
-        self.confidence_level = config.get('confidence_level', 0.95)
-    
-    def analyze_trades(self, trades: List[Dict], portfolio_value: float) -> Dict:
-        # Method to perform a complete trade analysis 
-        if len(trades) < self.min_trades:
-            return self._generate_limited_analysis(trades)
-        
-        trades_df = self._convert_trades_to_dataframe(trades)
-        self._perform_trade_analytics(trades_df, portfolio_value)
-        
-        return self._generate_analysis_report()
-
-    def _convert_trades_to_dataframe(self, trades: List[Dict]) -> pd.DataFrame:
-        # Convert trades to a DataFrame
-        return pd.DataFrame(trades)
-
-    def _perform_trade_analytics(self, trades_df: pd.DataFrame, portfolio_value: float):
-        # Perform various trade analytics
-        self.trade_metrics = self._calculate_trade_metrics(trades_df, portfolio_value)
-        self.trade_distributions = self._analyze_distributions(trades_df)
-        self.trade_patterns = self._analyze_patterns(trades_df)
-        self.time_analysis = self._analyze_time_patterns(trades_df)
-        self.risk_analysis = self._analyze_risk_metrics(trades_df, portfolio_value)
