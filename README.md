@@ -15,7 +15,7 @@ Advanced ensemble trading strategy combining macro analysis and algorithmic trad
 
 ```bash
 # Clone repository
-git clone https://github.com/TUO_USERNAME/omnia_strategy.git
+git clone https://github.com/00WhengWheng/omnia_strategy.git
 
 # Create virtual environment
 python -m venv venv

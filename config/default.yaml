@@ -41,3 +41,4 @@ data:
   primary_timeframe: "1D"
   secondary_timeframes: ["1H", "4H", "1W"]
   min_history_required: 252
+  
