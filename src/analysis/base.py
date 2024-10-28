@@ -59,3 +59,4 @@ class BaseAnalyzer(ABC):
     def get_required_columns(self) -> list:
         """Ritorna le colonne richieste per l'analisi"""
         pass
+    
