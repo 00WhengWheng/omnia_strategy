@@ -1,11 +1,10 @@
 version: '3.8'
 
 services:
-  omnia_strategy:
+  trading-bot:
     build: .
-    ports:
-      - "80:80"
     volumes:
       - .:/app
     environment:
-      - NAME=OmniaStrategy
+      - PYTHONPATH=/app
+    command: python first.py
