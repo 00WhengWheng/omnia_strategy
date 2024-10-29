@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  omnia_strategy:
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app
+    environment:
+      - NAME=OmniaStrategy
