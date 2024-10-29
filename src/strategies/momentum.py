@@ -5,20 +5,21 @@ from datetime import datetime
 import talib as ta
 from .base import BaseStrategy, StrategySignal
 from ..core.constants import TimeFrame
+import logging
 
 class MomentumStrategy(BaseStrategy):
     def _initialize_strategy(self) -> None:
-        """Inizializza i parametri specifici della strategia"""
-        # Parametri RSI
+        """Initialize strategy parameters."""
+        # RSI Parameters
         self.rsi_period = self.config.get('rsi_period', 14)
         self.rsi_threshold = self.config.get('rsi_threshold', 60)
         
-        # Parametri MACD
+        # MACD Parameters
         self.macd_fast = self.config.get('macd_fast', 12)
         self.macd_slow = self.config.get('macd_slow', 26)
         self.macd_signal = self.config.get('macd_signal', 9)
         
-        # Parametri ADX
+        # ADX Parameters
         self.adx_period = self.config.get('adx_period', 14)
         self.adx_threshold = self.config.get('adx_threshold', 25)
         
@@ -37,7 +38,7 @@ class MomentumStrategy(BaseStrategy):
         self.mfi_period = self.config.get('mfi_period', 14)
         self.mfi_threshold = self.config.get('mfi_threshold', 60)
         
-        # Filtri
+        # Filters
         self.min_momentum = self.config.get('min_momentum', 0.3)
         self.volume_filter = self.config.get('volume_filter', True)
         self.volatility_filter = self.config.get('volatility_filter', True)
@@ -51,40 +52,50 @@ class MomentumStrategy(BaseStrategy):
         # Performance tracking
         self.momentum_history = pd.DataFrame()
 
+        self._initialize_logging()
+
+    def _initialize_logging(self):
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info("Initialized MomentumStrategy")
+
     def generate_signals(self, data: pd.DataFrame) -> StrategySignal:
-        """Genera segnali di momentum"""
-        # Calcola indicatori
-        indicators = self._calculate_momentum_indicators(data)
-        
-        # Analisi multi-timeframe
-        mtf_analysis = self._analyze_multiple_timeframes(data)
-        
-        # Identifica momentum signals
-        momentum_signals = self._identify_momentum_signals(
-            data, indicators, mtf_analysis)
-        
-        # Verifica filtri
-        if not self._check_momentum_filters(data, momentum_signals, indicators):
-            return self._generate_neutral_signal(data)
-        
-        # Calcola forza del momentum
-        momentum_strength = self._calculate_momentum_strength(
-            indicators, momentum_signals)
-        
-        # Genera segnale se valido
-        if momentum_signals['valid']:
-            signal = self._generate_momentum_signal(
-                data, momentum_signals, indicators, momentum_strength)
+        """Generate momentum signals."""
+        try:
+            self.logger.info("Generating signals")
+            # Calculate indicators
+            indicators = self._calculate_momentum_indicators(data)
             
-            # Aggiorna statistiche
-            self._update_momentum_statistics(momentum_signals, signal)
-        else:
-            signal = self._generate_neutral_signal(data)
-        
-        return signal
+            # Multi-timeframe analysis
+            mtf_analysis = self._analyze_multiple_timeframes(data)
+            
+            # Identify momentum signals
+            momentum_signals = self._identify_momentum_signals(data, indicators, mtf_analysis)
+            
+            # Check filters
+            if not self._check_momentum_filters(data, momentum_signals, indicators):
+                return self._generate_neutral_signal(data)
+            
+            # Calculate momentum strength
+            momentum_strength = self._calculate_momentum_strength(indicators, momentum_signals)
+            
+            # Generate signal if valid
+            if momentum_signals['valid']:
+                signal = self._generate_momentum_signal(data, momentum_signals, indicators, momentum_strength)
+                
+                # Update statistics
+                self._update_momentum_statistics(momentum_signals, signal)
+            else:
+                signal = self._generate_neutral_signal(data)
+            
+            self.logger.debug(f"Generated signal: {signal}")
+            return signal
+        except Exception as e:
+            self.logger.error(f"Error generating signals: {e}")
+            return self._generate_neutral_signal(data)
 
     def _calculate_momentum_indicators(self, data: pd.DataFrame) -> Dict:
-        """Calcola indicatori di momentum"""
+        """Calculate momentum indicators."""
         close = data['close']
         high = data['high']
         low = data['low']
@@ -101,7 +112,7 @@ class MomentumStrategy(BaseStrategy):
             signalperiod=self.macd_signal
         )
         
-        # ADX e DMI
+        # ADX and DMI
         adx = ta.ADX(high, low, close, timeperiod=self.adx_period)
         plus_di = ta.PLUS_DI(high, low, close, timeperiod=self.adx_period)
         minus_di = ta.MINUS_DI(high, low, close, timeperiod=self.adx_period)
@@ -144,18 +155,18 @@ class MomentumStrategy(BaseStrategy):
             'atr': atr
         }
 
-def _analyze_multiple_timeframes(self, data: pd.DataFrame) -> Dict:
-        """Analizza momentum su multipli timeframe"""
+    def _analyze_multiple_timeframes(self, data: pd.DataFrame) -> Dict:
+        """Analyze momentum on multiple timeframes."""
         mtf_analysis = {}
         
         for timeframe in self.timeframes:
             # Resample data
             tf_data = self._resample_data(data, timeframe)
             
-            # Calcola indicatori per questo timeframe
+            # Calculate indicators for this timeframe
             indicators = self._calculate_momentum_indicators(tf_data)
             
-            # Analizza momentum per questo timeframe
+            # Analyze momentum for this timeframe
             mtf_analysis[timeframe] = {
                 'momentum_score': self._calculate_timeframe_momentum(indicators),
                 'trend_alignment': self._check_trend_alignment(indicators),
@@ -164,19 +175,18 @@ def _analyze_multiple_timeframes(self, data: pd.DataFrame) -> Dict:
             
         return mtf_analysis
         
-def _calculate_timeframe_momentum(self, indicators: Dict) -> float:
-        """Calcola score di momentum per singolo timeframe"""
+    def _calculate_timeframe_momentum(self, indicators: Dict) -> float:
+        """Calculate momentum score for a single timeframe."""
         # RSI momentum
         rsi_score = (indicators['rsi']['value'].iloc[-1] - 50) / 50
         
         # MACD momentum
-        macd_score = indicators['macd']['hist'].iloc[-1] / \
-                    abs(indicators['macd']['hist']).mean()
+        macd_score = indicators['macd']['hist'].iloc[-1] / abs(indicators['macd']['hist']).mean()
         
         # ROC momentum
         roc_score = indicators['roc']['value'].iloc[-1] / self.roc_threshold
         
-        # Calcola score composito
+        # Calculate composite score
         momentum_score = (
             rsi_score * 0.3 +
             macd_score * 0.4 +
@@ -185,8 +195,8 @@ def _calculate_timeframe_momentum(self, indicators: Dict) -> float:
         
         return np.clip(momentum_score, -1, 1)
 
-def _check_trend_alignment(self, indicators: Dict) -> float:
-        """Verifica allineamento del trend"""
+    def _check_trend_alignment(self, indicators: Dict) -> float:
+        """Check trend alignment."""
         adx = indicators['adx']['value'].iloc[-1]
         plus_di = indicators['adx']['plus_di'].iloc[-1]
         minus_di = indicators['adx']['minus_di'].iloc[-1]
@@ -198,8 +208,8 @@ def _check_trend_alignment(self, indicators: Dict) -> float:
                 return -1.0
         return 0.0
 
-def _calculate_signal_strength(self, indicators: Dict) -> float:
-        """Calcola forza del segnale"""
+    def _calculate_signal_strength(self, indicators: Dict) -> float:
+        """Calculate signal strength."""
         # ADX strength
         adx_strength = min(indicators['adx']['value'].iloc[-1] / 50, 1.0)
         
@@ -213,18 +223,18 @@ def _calculate_signal_strength(self, indicators: Dict) -> float:
                 volume_strength * 0.3 + 
                 momentum_cons * 0.3)
 
-def _calculate_momentum_consistency(self, indicators: Dict) -> float:
-        """Calcola consistenza del momentum"""
-        # Verifica consistenza RSI
+    def _calculate_momentum_consistency(self, indicators: Dict) -> float:
+        """Calculate momentum consistency."""
+        # Check RSI consistency
         rsi_trend = all(indicators['rsi']['value'].tail(5) > 50)
         
-        # Verifica consistenza MACD
+        # Check MACD consistency
         macd_trend = all(indicators['macd']['hist'].tail(5) > 0)
         
-        # Verifica consistenza ROC
+        # Check ROC consistency
         roc_trend = all(indicators['roc']['value'].tail(5) > 0)
         
-        # Calcola score di consistenza
+        # Calculate consistency score
         consistency_score = (
             rsi_trend * 0.3 +
             macd_trend * 0.4 +
@@ -233,32 +243,32 @@ def _calculate_momentum_consistency(self, indicators: Dict) -> float:
         
         return consistency_score
 
-def _check_momentum_filters(self, data: pd.DataFrame,
+    def _check_momentum_filters(self, data: pd.DataFrame,
                               momentum_signals: Dict,
                               indicators: Dict) -> bool:
-        """Applica filtri di momentum"""
-        # Verifica forza minima
+        """Apply momentum filters."""
+        # Check minimum strength
         if abs(momentum_signals['strength']) < self.min_momentum:
             return False
         
-        # Verifica volume
+        # Check volume
         if self.volume_filter and not self._check_volume_conditions(data):
             return False
         
-        # Verifica volatilità
+        # Check volatility
         if self.volatility_filter and not self._check_volatility_conditions(indicators):
             return False
         
-        # Verifica correlazione
+        # Check correlation
         if self.correlation_filter and not self._check_correlation_conditions(data):
             return False
         
         return True
 
-def _calculate_momentum_confidence(self, signals: Dict,
+    def _calculate_momentum_confidence(self, signals: Dict,
                                     indicators: Dict,
                                     strength: float) -> float:
-        """Calcola confidenza nel segnale di momentum"""
+        """Calculate confidence in the momentum signal."""
         # Trend strength
         trend_confidence = indicators['adx']['trend_strength']
         
@@ -281,32 +291,32 @@ def _calculate_momentum_confidence(self, signals: Dict,
         
         return np.clip(confidence, 0, 1)
 
-def get_required_columns(self) -> List[str]:
-        """Ritorna le colonne richieste dalla strategia"""
+    def get_required_columns(self) -> List[str]:
+        """Return the columns required by the strategy."""
         return ['open', 'high', 'low', 'close', 'volume']
 
-def get_min_required_history(self) -> int:
-        """Ritorna il minimo storico richiesto"""
+    def get_min_required_history(self) -> int:
+        """Return the minimum required history."""
         return max(self.macd_slow + self.macd_signal,
                   self.rsi_period,
                   self.adx_period) + 50
 
-def _apply_strategy_filters(self, signal: StrategySignal,
+    def _apply_strategy_filters(self, signal: StrategySignal,
                               data: pd.DataFrame) -> bool:
-        """Applica filtri specifici della strategia"""
-        # Verifica momentum minimo
+        """Apply strategy-specific filters."""
+        # Check minimum momentum
         if signal.strength < self.min_momentum:
             return False
         
-        # Verifica consenso timeframe
+        # Check timeframe consensus
         if abs(signal.metadata['mtf_consensus']) < 0.5:
             return False
         
         return True
 
-def _update_momentum_statistics(self, signals: Dict,
+    def _update_momentum_statistics(self, signals: Dict,
                                   generated_signal: StrategySignal) -> None:
-        """Aggiorna statistiche di momentum"""
+        """Update momentum statistics."""
         new_stats = {
             'timestamp': generated_signal.timestamp,
             'direction': generated_signal.direction,
@@ -319,4 +329,3 @@ def _update_momentum_statistics(self, signals: Dict,
             self.momentum_history,
             pd.DataFrame([new_stats])
         ])
-

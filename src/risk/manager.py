@@ -305,4 +305,3 @@ class RiskManager:
             pos_id: pos['risk'] / total_risk
             for pos_id, pos in self.portfolio.open_positions.items()
         }
-        

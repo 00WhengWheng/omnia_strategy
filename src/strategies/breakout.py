@@ -5,10 +5,20 @@ from datetime import datetime
 import talib as ta
 from .base import BaseStrategy, StrategySignal
 from ..core.constants import TimeFrame
+import logging
 
 class BreakoutStrategy(BaseStrategy):
     def _initialize_strategy(self) -> None:
-        # Initialize the breakout strategy
+        """Initialize the breakout strategy."""
+        required_keys = [
+            'breakout_period', 'confirmation_period', 'volatility_lookback',
+            'pivot_points_lookback', 'volume_threshold', 'volatility_threshold',
+            'min_consolidation_bars', 'atr_multiplier', 'partial_profit_levels'
+        ]
+        for key in required_keys:
+            if key not in self.config:
+                raise ValueError(f"Missing required config key: {key}")
+
         # Parameters for breakout detection
         self.breakout_period = self.config.get('breakout_period', 20)
         self.confirmation_period = self.config.get('confirmation_period', 3)
@@ -35,35 +45,46 @@ class BreakoutStrategy(BaseStrategy):
         self.false_breakout_count = 0
         self.successful_breakout_count = 0
 
+        self._initialize_logging()
+
+    def _initialize_logging(self):
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info("Initialized BreakoutStrategy")
+
     def generate_signals(self, data: pd.DataFrame) -> StrategySignal:
-        # Generate breakout signals
-        # Identify key levels
-        levels = self._identify_key_levels(data)
-        
-        # Calculate indicators
-        indicators = self._calculate_indicators(data)
-        
-        # Identify breakout
-        breakout = self._identify_breakout(data, levels, indicators)
-        
-        # Check filters
-        if not self._check_filters(data, breakout, indicators):
-            return self._generate_neutral_signal(data)
-        
-        # Generate signal based on breakout
-        if breakout['valid']:
-            signal = self._generate_breakout_signal(
-                data, breakout, levels, indicators)
+        """Generate trading signals based on the data provided."""
+        try:
+            self.logger.info("Generating signals")
+            # Identify key levels
+            levels = self._identify_key_levels(data)
             
-            # Update breakout statistics
-            self._update_breakout_statistics(breakout, signal)
-        else:
-            signal = self._generate_neutral_signal(data)
-        
-        return signal
+            # Calculate indicators
+            indicators = self._calculate_indicators(data)
+            
+            # Identify breakout
+            breakout = self._identify_breakout(data, levels, indicators)
+            
+            # Check filters
+            if not self._check_filters(data, breakout, indicators):
+                return self._generate_neutral_signal(data)
+            
+            # Generate signal based on breakout
+            if breakout['valid']:
+                signal = self._generate_breakout_signal(data, breakout, levels, indicators)
+                # Update breakout statistics
+                self._update_breakout_statistics(breakout, signal)
+            else:
+                signal = self._generate_neutral_signal(data)
+            
+            self.logger.debug(f"Generated signal: {signal}")
+            return signal
+        except Exception as e:
+            self.logger.error(f"Error generating signals: {e}")
+            return self._generate_neutral_signal(data)
 
     def _identify_key_levels(self, data: pd.DataFrame) -> Dict:
-        # Identify key levels for breakout detection
+        """Identify key levels for breakout detection."""
         # Support & Resistance levels
         sr_levels = self._calculate_support_resistance(data)
         
@@ -88,7 +109,7 @@ class BreakoutStrategy(BaseStrategy):
         }
 
     def _calculate_support_resistance(self, data: pd.DataFrame) -> Dict:
-        # Calculate support and resistance levels
+        """Calculate support and resistance levels."""
         levels = {}
         
         for period in self.support_resistance_periods:
@@ -108,7 +129,7 @@ class BreakoutStrategy(BaseStrategy):
         return levels
 
     def _calculate_pivot_points(self, data: pd.DataFrame) -> Dict:
-        # Calculate pivot points
+        """Calculate pivot points."""
         pivots = {}
         
         high = data['high'].iloc[-self.pivot_points_lookback:]
@@ -132,7 +153,7 @@ class BreakoutStrategy(BaseStrategy):
         return pivots
 
     def _identify_consolidation_range(self, data: pd.DataFrame) -> Dict:
-        # Identify consolidation range
+        """Identify consolidation range."""
         # Calculate volatility
         volatility = data['close'].rolling(self.volatility_lookback).std()
         avg_volatility = volatility.mean()
@@ -155,12 +176,12 @@ class BreakoutStrategy(BaseStrategy):
         return {'valid': False}
 
     def _calculate_volume_profile_levels(self, data: pd.DataFrame) -> Dict:
-        # Calculate volume profile levels
+        """Calculate volume profile levels."""
         # Calculate price range
         price_range = np.linspace(
             data['low'].min(),
             data['high'].max(),
-            50  # numero di bins
+            50  # number of bins
         )
         
         volume_profile = {}
@@ -183,7 +204,7 @@ class BreakoutStrategy(BaseStrategy):
     def _identify_breakout(self, data: pd.DataFrame,
                           levels: Dict,
                           indicators: Dict) -> Dict:
-        # Identify breakout based on key levels
+        """Identify breakout based on key levels."""
         current_price = data['close'].iloc[-1]
         current_volume = data['volume'].iloc[-1]
         
@@ -223,7 +244,7 @@ class BreakoutStrategy(BaseStrategy):
                                    current_price: float,
                                    current_volume: float,
                                    indicators: Dict) -> float:
-        # Calculate breakout strength
+        """Calculate breakout strength."""
         # Calculate price momentum
         price_momentum = self._calculate_momentum_score(data)
         volume_strength = current_volume / indicators['volume_sma'].iloc[-1]
@@ -242,7 +263,7 @@ class BreakoutStrategy(BaseStrategy):
                                 breakout: Dict,
                                 levels: Dict,
                                 indicators: Dict) -> StrategySignal:
-        # Generate breakout signal
+        """Generate breakout signal."""
         current_price = data['close'].iloc[-1]
         atr = indicators['atr'].iloc[-1]
         
@@ -285,7 +306,7 @@ class BreakoutStrategy(BaseStrategy):
     def _check_filters(self, data: pd.DataFrame,
                       breakout: Dict,
                       indicators: Dict) -> bool:
-        # Check breakout filters
+        """Check breakout filters."""
         if not breakout['valid']:
             return False
             
@@ -307,7 +328,7 @@ class BreakoutStrategy(BaseStrategy):
 
     def _detect_false_breakout_pattern(self, data: pd.DataFrame,
                                      breakout: Dict) -> bool:
-        # Detect false breakout patterns
+        """Detect false breakout patterns."""
         # Check for recent consolidation
         recent_close = data['close'].iloc[-1]
         recent_high = data['high'].iloc[-1]
@@ -322,7 +343,7 @@ class BreakoutStrategy(BaseStrategy):
 
     def _update_breakout_statistics(self, breakout: Dict,
                                   signal: StrategySignal) -> None:
-        # Update breakout statistics
+        """Update breakout statistics."""
         self.breakout_history.append({
             'timestamp': signal.timestamp,
             'direction': breakout['direction'],
@@ -333,14 +354,14 @@ class BreakoutStrategy(BaseStrategy):
         })
 
     def get_required_columns(self) -> List[str]:
-        # Get the required columns for the strategy
+        """Get the required columns for the strategy."""
         return ['open', 'high', 'low', 'close', 'volume']
 
     def get_min_required_history(self) -> int:
-        # Get the minimum required history length
+        """Get the minimum required history length."""
         return max(self.support_resistance_periods)
 
     def _apply_strategy_filters(self, signal: StrategySignal,
                               data: pd.DataFrame) -> bool:
-        # Apply strategy-specific filters
+        """Apply strategy-specific filters."""
         return signal.confidence >= 0.7  # High confidence
