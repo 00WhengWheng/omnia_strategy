@@ -11,7 +11,7 @@ class ConfigManager:
         self.setup_logging()
 
     def load_config(self) -> None:
-        """Carica la configurazione dal file yaml"""
+        # Load the configuration file
         try:
             with open(self.config_path, 'r') as file:
                 self.config = yaml.safe_load(file)
@@ -20,7 +20,7 @@ class ConfigManager:
             raise
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Recupera un valore dalla configurazione"""
+        # Get a value from the configuration
         keys = key.split('.')
         value = self.config
         
@@ -33,7 +33,7 @@ class ConfigManager:
         return value
 
     def setup_logging(self) -> None:
-        """Configura il logging base"""
+        # Setup logging
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -44,7 +44,7 @@ class ConfigManager:
         )
 
     def validate_config(self) -> bool:
-        """Valida la configurazione"""
+        # Validate the configuration
         required_keys = [
             'core.name',
             'core.version',
@@ -61,7 +61,7 @@ class ConfigManager:
         return True
 
     def update_config(self, updates: Dict[str, Any]) -> None:
-        """Aggiorna la configurazione con nuovi valori"""
+        # Update the configuration
         def update_recursive(d: Dict, u: Dict) -> Dict:
             for k, v in u.items():
                 if isinstance(v, dict):
@@ -74,7 +74,7 @@ class ConfigManager:
         self._save_config()
 
     def _save_config(self) -> None:
-        """Salva la configurazione su file"""
+        # Save the configuration
         try:
             with open(self.config_path, 'w') as file:
                 yaml.dump(self.config, file, default_flow_style=False)
