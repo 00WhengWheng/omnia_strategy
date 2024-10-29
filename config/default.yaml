@@ -5,6 +5,12 @@ core:
   lookback_window: 252  # Number of days for the lookback window
   update_frequency: "daily"  # Update frequency: daily, weekly, etc.
 
+# Strategy settings
+strategy:
+  name: "ExampleStrategy"
+  timeframe: "1D"
+  risk_per_trade: 0.01
+
 # Market regime settings
 regime:
   crisis_vol_threshold: 30  # Volatility threshold for crisis regime
