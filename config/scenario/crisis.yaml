@@ -1,0 +1,72 @@
+# Crisis/High Volatility Market Configuration
+system:
+  name: "Trading System - Crisis Mode"
+  environment: "crisis"
+  debug_mode: false
+  cycle_interval: 0.5  # Faster updates during crisis
+  emergency_mode: true
+
+logging:
+  level: "INFO"
+  file_path: "logs/crisis/"
+  alert_on_error: true
+  detailed_logging: true
+
+market_data:
+  update_interval: 1
+  enhanced_validation: true
+  multiple_sources: true
+  data_quality_checks: "strict"
+
+analysis:
+  volatility_monitoring: true
+  regime_detection: true
+  correlation_analysis: true
+  liquidity_analysis: true
+  update_interval: 15  # seconds
+  alert_thresholds:
+    volatility_spike: 0.2
+    correlation_break: 0.3
+    liquidity_drop: 0.5
+
+risk_management:
+  crisis_mode: true
+  max_position_size: 0.02  # Reduced position size
+  max_portfolio_risk: 0.08  # Reduced risk tolerance
+  max_drawdown: 0.10
+  hedging:
+    enabled: true
+    instruments: ["VIX", "GLD"]
+  stop_loss:
+    enabled: true
+    type: "guaranteed"
+    tightened_threshold: true
+  position_closing:
+    gradual: true
+    threshold: 0.05
+
+execution:
+  emergency_closing: true
+  order_types:
+    - "market"  # Limit to market orders for guaranteed execution
+  retry_attempts: 5
+  timeout: 15
+  liquidity_check: true
+
+monitoring:
+  enhanced_monitoring: true
+  alert_channels:
+    - "slack"
+    - "email"
+    - "sms"
+  metrics_interval: 15
+  system_health_check: true
+  performance_monitoring: true
+
+strategies:
+  crisis_adaptations: true
+  reduced_exposure: true
+  hedging_enabled: true
+  defensive_positioning: true
+  max_active_positions: 5  # Reduced number of positions
+  required_margin: 2.0  # Increased margin requirements

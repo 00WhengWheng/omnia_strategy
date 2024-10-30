@@ -1,0 +1,81 @@
+# Live Trading Configuration
+system:
+  name: "Trading System - Live"
+  environment: "production"
+  debug_mode: false
+  cycle_interval: 1
+  timezone: "UTC"
+  emergency_shutdown_enabled: true
+
+logging:
+  level: "INFO"
+  file_path: "logs/live/"
+  alert_on_error: true
+  log_rotation: true
+  backup_logs: true
+
+database:
+  type: "postgres"
+  host: "localhost"
+  port: 5432
+  database: "live_trading"
+  backup_interval: 3600  # seconds
+
+market_data:
+  source: "real_time"
+  providers:
+    primary: "interactive_brokers"
+    backup: "alpaca"
+  cache_size: 5000
+  validation: "strict"
+
+analysis:
+  update_interval: 30  # seconds
+  real_time_analysis: true
+  market_regime_detection: true
+  correlation_monitoring: true
+  alert_thresholds:
+    volatility: 0.3
+    correlation: 0.8
+
+risk_management:
+  max_position_size: 0.05
+  max_portfolio_risk: 0.15
+  max_drawdown: 0.20
+  position_sizing: "adaptive"
+  stop_loss:
+    enabled: true
+    type: "trailing"
+  take_profit:
+    enabled: true
+    type: "scaled"
+
+execution:
+  broker: "interactive_brokers"
+  account_type: "margin"
+  order_types:
+    - "market"
+    - "limit"
+    - "stop"
+  retry_attempts: 3
+  timeout: 30
+
+monitoring:
+  grafana:
+    enabled: true
+    host: "monitoring.example.com"
+    port: 3000
+  alerts:
+    slack: true
+    email: true
+  heartbeat_interval: 30
+  system_metrics_interval: 60
+
+strategies:
+  max_active_positions: 10
+  position_correlation_limit: 0.7
+  market_conditions:
+    trading_hours:
+      start: "09:30"
+      end: "16:00"
+    market_holiday_check: true

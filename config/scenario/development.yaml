@@ -1,0 +1,49 @@
+# Development Environment Configuration
+system:
+  name: "Trading System - Development"
+  environment: "development"
+  debug_mode: true
+  cycle_interval: 1  # seconds
+  timezone: "UTC"
+
+logging:
+  level: "DEBUG"
+  file_path: "logs/dev/"
+  console_output: true
+  detailed_errors: true
+
+database:
+  type: "sqlite"  # Use lightweight DB for development
+  path: "data/dev.db"
+  logging: true
+
+market_data:
+  source: "csv"  # Use local files for development
+  data_path: "data/dev/"
+  cache_size: 1000
+  validation_level: "strict"
+
+analysis:
+  update_interval: 60  # seconds
+  cache_results: true
+  debug_output: true
+  save_intermediates: true
+
+risk_management:
+  max_position_size: 0.01
+  max_portfolio_risk: 0.1
+  strict_validation: true
+  simulation_mode: true
+
+monitoring:
+  grafana:
+    enabled: true
+    host: "localhost"
+    port: 3000
+  metrics_interval: 5  # seconds
+  save_all_metrics: true
+
+strategies:
+  paper_trading: true
+  max_active_strategies: 3
+  validation_mode: "strict"

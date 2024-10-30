@@ -47,3 +47,17 @@ data:
   primary_timeframe: "1D"  # Primary timeframe for data analysis
   secondary_timeframes: ["1H", "4H", "1W"]  # Secondary timeframes for additional context
   min_history_required: 252  # Minimum historical data required (in days)
+
+# Monitoring settings
+monitoring:
+  influxdb_url: "http://localhost:8086"
+  influxdb_token: "your_token"
+  influxdb_org: "your_org"
+  influxdb_bucket: "trading_metrics"
+  dashboard_refresh: "5s"
+  metrics_retention: "30d"
+
+#### Example usage
+## config_type = "development"  # or "backtest", "live", "crisis"
+## config_path = f"config/templates/{config_type}.yaml"
+## system = TradingSystem(config_path)

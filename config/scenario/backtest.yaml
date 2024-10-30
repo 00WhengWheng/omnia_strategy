@@ -1,0 +1,59 @@
+# Backtesting Configuration
+system:
+  name: "Trading System - Backtest"
+  environment: "backtest"
+  debug_mode: false
+  parallel_processing: true
+  max_workers: 8
+
+logging:
+  level: "INFO"
+  file_path: "logs/backtest/"
+  save_results: true
+
+database:
+  type: "postgres"
+  host: "localhost"
+  port: 5432
+  database: "backtest_results"
+
+market_data:
+  source: "historical"
+  data_format: "parquet"
+  start_date: "2020-01-01"
+  end_date: "2023-12-31"
+  timeframe: "1D"
+  assets: ["AAPL", "GOOGL", "MSFT"]  # Example assets
+
+analysis:
+  parallel_analysis: true
+  save_results: true
+  regime_detection: true
+  correlation_analysis: true
+  metrics_calculation: true
+
+risk_management:
+  position_sizing: "optimal"
+  portfolio_optimization: true
+  risk_metrics:
+    - "var"
+    - "expected_shortfall"
+    - "sharpe_ratio"
+  stress_testing: true
+
+strategies:
+  optimization: true
+  walk_forward_analysis: true
+  parameter_ranges:
+    lookback: [10, 20, 30]
+    threshold: [0.5, 1.0, 1.5]
+  cross_validation: true
+
+performance_analysis:
+  metrics:
+    - "sharpe_ratio"
+    - "sortino_ratio"
+    - "max_drawdown"
+    - "win_rate"
+  plotting: true
+  report_generation: true
