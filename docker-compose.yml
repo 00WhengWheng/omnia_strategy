@@ -7,4 +7,9 @@ services:
       - .:/app
     environment:
       - PYTHONPATH=/app
-    command: python first.py
+    command: python main.py
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M

@@ -3,7 +3,7 @@ pandas>=1.5.0
 numpy>=1.21.0
 
 # Technical analysis
-talib-binary>=0.4.24
+pandas_ta>=0.2.0
 arch>=5.0.0
 
 # Machine Learning & NLP

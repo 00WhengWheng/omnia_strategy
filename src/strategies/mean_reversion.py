@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import talib as ta
+import pandas_ta as ta
 from scipy import stats
 from .base import BaseStrategy, StrategySignal
 from ..core.constants import TimeFrame

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import pandas as pd
 import numpy as np
-import talib as ta
+import pandas_ta as ta
 from scipy import stats
 import logging
 from ..base import BaseAnalyzer

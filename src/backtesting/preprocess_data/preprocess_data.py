@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Dict, Union, Optional
 from sklearn.preprocessing import RobustScaler, MinMaxScaler
 from sklearn.impute import KNNImputer
-import ta
+import pandas_ta as ta
 from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
