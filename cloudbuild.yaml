@@ -1,0 +1,8 @@
+# cloudbuild.yaml
+steps:
+- name: 'hashicorp/terraform'
+  args: ['init']
+- name: 'hashicorp/terraform'
+  args: ['plan']
+- name: 'hashicorp/terraform'
+  args: ['apply', '-auto-approve']
